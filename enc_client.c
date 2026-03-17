@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
     {
         if (plaintext[i] != ' ' && (plaintext[i] < 'A' || plaintext[i] > 'Z'))
         {
-            fprintf(stderr, "ERROR bad character in plaintext\n");
+            fprintf(stderr, "enc_client: ERROR bad character in plaintext\n");
             exit(1);
         }
     }
