@@ -73,7 +73,7 @@ void main(int argc, char **argv)
         keyStr[i] = letter;
     };
 
-    keyStr[numChars + 1] = '\0'; // Terminator
+    keyStr[numChars] = '\0'; // Terminator
     printf("%s\n", keyStr);      // Add newline
     exit(0);
 };
