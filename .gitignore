@@ -3,3 +3,9 @@ dec_server
 enc_client
 enc_server
 keygen
+plaintext1
+plaintext2
+plaintext3
+plaintext4
+plaintext5
+mykey
