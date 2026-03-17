@@ -37,6 +37,39 @@ void error(const char *msg)
     exit(1);
 };
 
+char intToChar(int val)
+{
+    int base = 65;       // Capital A
+    int modo = val % 27; // Limit to accepted chars
+    int ascii;
+    if (modo == 26)
+    { // 26 will represent space
+        ascii = 32;
+    }
+    else
+    {
+        ascii = base + modo; // Otherwise we get the character ascii value
+    };
+
+    return (char)ascii; // Cast on return
+};
+
+int charToInt(char c)
+{
+    int base = 65;
+    int value;
+    if ((int)c == 32)
+    {
+        value = 26; // 26 represents space
+    }
+    else
+    {
+        value = ((int)c) - 65; // subtract base (Capital A) to get val
+    }
+
+    return value;
+};
+
 char *encoder(const char *toEncode, const char *key)
 {
     size_t length = strlen(toEncode);
@@ -46,10 +79,18 @@ char *encoder(const char *toEncode, const char *key)
 
     for (i = 0; i < length; i++)
     {
-        char c = toEncode[i];
-        int ascii_val = (int)c;
-        printf("%d\n", ascii_val);
+        char encodeChar = toEncode[i];
+        int encode_val = charToInt(encodeChar);
+        char keyChar = key[i];
+        int key_val = charToInt(keyChar);
+
+        int combined_val = (encode_val + key_val) % 27;
+        char result_char = intToChar(combined_val);
+
+        result[i] = result_char;
     };
+
+    return result;
 };
 
 // Set up the address struct for the server socket
@@ -161,8 +202,16 @@ int main(int argc, char *argv[])
             memset(keyData, '\0', sizeof(keyData));
             recv(connectionSocket, keyData, keyLen, 0);
 
-            printf("Received data from client: %s \n", inputData);
-            printf("Received key from client: %s \n", keyData);
+            //Encode data
+            char *result = encoder(inputData, keyData);
+
+            // Send result back to client
+            int charsWritten = send(connectionSocket, result, strlen(result), 0);
+            if (charsWritten < 0)
+            {
+                error("ERROR writing to socket");
+            }
+            free(result);
 
             close(connectionSocket);
             exit(0);

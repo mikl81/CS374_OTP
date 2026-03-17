@@ -193,17 +193,17 @@ int main(int argc, char *argv[])
         error("ERROR writing key to socket");
     }
 
-    // // Receive encrypted result
-    // char result[TCP_LIMIT + 1];
-    // memset(result, '\0', sizeof(result));
-    // charsRead = recv(socketFD, result, sizeof(result) - 1, 0);
-    // if (charsRead < 0)
-    // {
-    //     error("ERROR reading from socket");
-    // }
+    // Receive encrypted result
+    char result[TCP_LIMIT + 1];
+    memset(result, '\0', sizeof(result));
+    charsRead = recv(socketFD, result, sizeof(result) - 1, 0);
+    if (charsRead < 0)
+    {
+        error("ERROR reading from socket");
+    }
 
-    // // Output ciphertext to stdout (can be redirected to file)
-    // printf("%s\n", result);
+    // Output ciphertext to stdout (can be redirected to file)
+    printf("%s\n", result);
 
     close(socketFD);
     return 0;
