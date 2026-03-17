@@ -26,6 +26,9 @@ as the plaintext.
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define HAND_REQ "ENC_HELLO"
+#define HAND_REP "ENC_ACK"
+
 // Error function used for reporting issues
 void error(const char *msg) {
   perror(msg);
@@ -34,7 +37,7 @@ void error(const char *msg) {
 
 char* encoder(const char *toEncode, const char *key){
     size_t length = strlen(toEncode);
-    
+
 };
 
 // Set up the address struct for the server socket
@@ -57,6 +60,7 @@ int main(int argc, char *argv[]){
   char buffer[256];
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
+  pid_t pid;
 
   // Check usage & args
   if (argc < 2) { 
@@ -68,6 +72,11 @@ int main(int argc, char *argv[]){
   int listenSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (listenSocket < 0) {
     error("ERROR opening socket");
+  }
+
+  int opt = 1;
+  if(setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
+    error("ERROR on setsockopt");
   }
 
   // Set up the address struct for the server socket
@@ -92,6 +101,21 @@ int main(int argc, char *argv[]){
     if (connectionSocket < 0){
       error("ERROR on accept");
     }
+
+    // pid = fork();
+    // switch(pid){
+    //     //Failed fork
+    //     case -1: 
+    //         error("ERROR creating fork");
+    //         exit(0);
+    //     //Success
+    //     case 0:
+    //         memset(buffer, '\0', sizeof(buffer));
+
+    //     default:
+    //         close(connectionSocket);
+
+    // };
 
     printf("SERVER: Connected to client running at host %d port %d\n", 
                           ntohs(clientAddress.sin_addr.s_addr),
