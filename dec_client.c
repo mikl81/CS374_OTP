@@ -55,26 +55,32 @@ int main(int argc, char *argv[])
 {
     int socketFD, charsWritten, charsRead;
     struct sockaddr_in serverAddress;
-    char buffer[256];
+    //char buffer[256];
     // Check usage & args
     if (argc < 4)
     {
-        fprintf(stderr, "USAGE: %s plaintext key port\n", argv[0]);
+        fprintf(stderr, "USAGE: %s encryptedText key port\n", argv[0]);
         exit(1);
     }
 
-    FILE *plaintextFile = fopen(argv[1], "r");
-    if (plaintextFile == NULL)
+    //open encryptedText file
+    FILE *encryptedFile = fopen(argv[1], "r");
+    if (encryptedFile == NULL)
     {
-        fprintf(stderr, "ERROR opening plaintext file\n");
+        fprintf(stderr, "ERROR opening encryptedText file\n");
         exit(1);
     };
+    //read to end to get len then rewind
+    fseek(encryptedFile, 0, SEEK_END);
+    long encryptedLen = ftell(encryptedFile);
+    rewind(encryptedFile);
 
-    char plaintext[TCP_LIMIT + 1];
-    memset(plaintext, '\0', sizeof(plaintext));
-    fgets(plaintext, sizeof(plaintext), plaintextFile);
-    fclose(plaintextFile);
-    plaintext[strcspn(plaintext, "\n")] = '\0'; // strip newline
+
+    char *encryptedText = malloc(encryptedLen+1);
+    memset(encryptedText, '\0', encryptedLen+1);
+    fread(encryptedText, 1, encryptedLen, encryptedFile);
+    fclose(encryptedFile);
+    encryptedText[strcspn(encryptedText, "\n")] = '\0'; // strip newline
 
     // Read key file
     FILE *keyFile = fopen(argv[2], "r");
@@ -83,24 +89,30 @@ int main(int argc, char *argv[])
         fprintf(stderr, "enc_client: ERROR opening key file\n");
         exit(1);
     }
-    char key[TCP_LIMIT + 1];
-    memset(key, '\0', sizeof(key));
-    fgets(key, sizeof(key), keyFile);
+
+    //read to end to get len then rewind
+    fseek(keyFile, 0, SEEK_END);
+    long keySize = ftell(keyFile);
+    rewind(keyFile);
+
+    char* key = malloc(keySize+1);
+    memset(key, '\0', keySize+1);
+    fread(key, 1, keySize, keyFile);
     fclose(keyFile);
     key[strcspn(key, "\n")] = '\0'; // strip newline
 
-    // Validate plaintext characters
-    for (int i = 0; plaintext[i] != '\0'; i++)
+    // Validate encryptedText characters
+    for (int i = 0; encryptedText[i] != '\0'; i++)
     {
-        if (plaintext[i] != ' ' && (plaintext[i] < 'A' || plaintext[i] > 'Z'))
+        if (encryptedText[i] != ' ' && (encryptedText[i] < 'A' || encryptedText[i] > 'Z'))
         {
-            fprintf(stderr, "ERROR bad character in plaintext\n");
+            fprintf(stderr, "ERROR bad character in encryptedText\n");
             exit(1);
         }
     }
 
     // Validate key length
-    if (strlen(key) < strlen(plaintext))
+    if (strlen(key) < strlen(encryptedText))
     {
         fprintf(stderr, "ERROR key is too short\n");
         exit(1);
@@ -146,13 +158,13 @@ int main(int argc, char *argv[])
         close(socketFD);
         exit(2);
     }
-    // Send plaintext and key to server using length-prefix protocol
-    int plaintextLen = strlen(plaintext);
-    send(socketFD, &plaintextLen, sizeof(int), 0);
-    charsWritten = send(socketFD, plaintext, strlen(plaintext), 0);
+    // Send encrypted text and key to server using length-prefix protocol
+    int encryptedTextLen = strlen(encryptedText);
+    send(socketFD, &encryptedTextLen, sizeof(int), 0);
+    charsWritten = send(socketFD, encryptedText, strlen(encryptedText), 0);
     if (charsWritten < 0)
     {
-        error("ERROR writing plaintext to socket");
+        error("ERROR writing encryptedText to socket");
     }
 
     int keyLen = strlen(key);
@@ -162,18 +174,30 @@ int main(int argc, char *argv[])
     {
         error("ERROR writing key to socket");
     }
+    // Receive result length
+    int resultLen;
+    recv(socketFD, &resultLen, sizeof(int), 0);
 
-    // Receive encrypted result
-    char result[TCP_LIMIT + 1];
-    memset(result, '\0', sizeof(result));
-    charsRead = recv(socketFD, result, sizeof(result) - 1, 0);
+    // Receive decrypted result
+    char *result = malloc(resultLen + 1);
+    memset(result, '\0', resultLen + 1);
+
+    int received = 0;
+    while (received < resultLen)
+    {
+        charsRead = recv(socketFD, result + received, resultLen - received, 0);
+        received += charsRead;
+    }
+
     if (charsRead < 0)
     {
         error("ERROR reading from socket");
     }
 
-    // Output ciphertext to stdout (can be redirected to file)
+    // Output encryptedText to stdout (can be redirected to file)
     printf("%s\n", result);
+
+    free(result);
 
     close(socketFD);
     return 0;
