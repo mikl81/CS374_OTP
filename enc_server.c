@@ -194,11 +194,11 @@ int main(int argc, char *argv[])
             int plaintextLen;
             recv(connectionSocket, &plaintextLen, sizeof(int), 0);
             char *inputData = malloc(plaintextLen + 1);
-            memset(inputData, '\0', sizeof(inputData));
+            memset(inputData, '\0', plaintextLen + 1);
             int received = 0;
             while (received < plaintextLen)
             {
-                int n = recv(connectionSocket, inputData, plaintextLen, 0);
+                int n = recv(connectionSocket, inputData + received, plaintextLen - received, 0);
                 received += n;
             }
 
@@ -206,12 +206,12 @@ int main(int argc, char *argv[])
             int keyLen;
             recv(connectionSocket, &keyLen, sizeof(int), 0);
             char *keyData = malloc(keyLen + 1);
-            memset(keyData, '\0', sizeof(keyData));
+            memset(keyData, '\0', keyLen + 1);
 
             received = 0;
             while (received < keyLen)
             {
-                int n = recv(connectionSocket, keyData, keyLen, 0);
+                int n = recv(connectionSocket, keyData + received, keyLen - received, 0);
                 received += n;
             }
 
@@ -219,6 +219,8 @@ int main(int argc, char *argv[])
             char *result = encoder(inputData, keyData);
 
             // Send result back to client
+            int resultLen = strlen(result);
+            send(connectionSocket, &resultLen, sizeof(int), 0);
             int charsWritten = send(connectionSocket, result, strlen(result), 0);
             if (charsWritten < 0)
             {

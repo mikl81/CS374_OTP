@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 {
     int socketFD, charsWritten, charsRead;
     struct sockaddr_in serverAddress;
-    char buffer[256];
+    //char buffer[256];
     // Check usage & args
     if (argc < 4)
     {
@@ -93,16 +93,22 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    //open plaintext file
     FILE *plaintextFile = fopen(argv[1], "r");
     if (plaintextFile == NULL)
     {
         fprintf(stderr, "ERROR opening plaintext file\n");
         exit(1);
     };
+    //read to end to get len then rewind
+    fseek(plaintextFile, 0, SEEK_END);
+    long plaintextSize = ftell(plaintextFile);
+    rewind(plaintextFile);
 
-    char plaintext[TCP_LIMIT + 1];
-    memset(plaintext, '\0', sizeof(plaintext));
-    fgets(plaintext, sizeof(plaintext), plaintextFile);
+
+    char *plaintext = malloc(plaintextSize+1);
+    memset(plaintext, '\0', plaintextSize+1);
+    fread(plaintext, 1, plaintextSize, plaintextFile);
     fclose(plaintextFile);
     plaintext[strcspn(plaintext, "\n")] = '\0'; // strip newline
 
@@ -113,9 +119,15 @@ int main(int argc, char *argv[])
         fprintf(stderr, "enc_client: ERROR opening key file\n");
         exit(1);
     }
-    char key[TCP_LIMIT + 1];
-    memset(key, '\0', sizeof(key));
-    fgets(key, sizeof(key), keyFile);
+
+    //read to end to get len then rewind
+    fseek(keyFile, 0, SEEK_END);
+    long keySize = ftell(keyFile);
+    rewind(keyFile);
+
+    char* key = malloc(keySize+1);
+    memset(key, '\0', keySize+1);
+    fread(key, 1, keySize, keyFile);
     fclose(keyFile);
     key[strcspn(key, "\n")] = '\0'; // strip newline
 
@@ -192,11 +204,21 @@ int main(int argc, char *argv[])
     {
         error("ERROR writing key to socket");
     }
+    // Receive result length
+    int resultLen;
+    recv(socketFD, &resultLen, sizeof(int), 0);
 
     // Receive encrypted result
-    char result[TCP_LIMIT + 1];
-    memset(result, '\0', sizeof(result));
-    charsRead = recv(socketFD, result, sizeof(result) - 1, 0);
+    char *result = malloc(resultLen + 1);
+    memset(result, '\0', resultLen + 1);
+
+    int received = 0;
+    while (received < resultLen)
+    {
+        charsRead = recv(socketFD, result + received, resultLen - received, 0);
+        received += charsRead;
+    }
+
     if (charsRead < 0)
     {
         error("ERROR reading from socket");
@@ -204,6 +226,8 @@ int main(int argc, char *argv[])
 
     // Output ciphertext to stdout (can be redirected to file)
     printf("%s\n", result);
+
+    free(result);
 
     close(socketFD);
     return 0;
