@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     {
         if (encryptedText[i] != ' ' && (encryptedText[i] < 'A' || encryptedText[i] > 'Z'))
         {
-            fprintf(stderr, "ERROR bad character in encryptedText\n");
+            fprintf(stderr, "dec_client error: input contains bad characters\n");
             exit(1);
         }
     }
