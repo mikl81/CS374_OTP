@@ -64,7 +64,7 @@ char *decoder(const char *toDecode, const char *key)
         char keyChar = key[i];
         int key_val = charToInt(keyChar);
 
-        int combined_val = (decode_val - key_val) % 27;
+        int combined_val = ((decode_val - key_val)+27) % 27;
         char result_char = intToChar(combined_val);
 
         result[i] = result_char;

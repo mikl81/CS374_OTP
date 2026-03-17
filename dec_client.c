@@ -6,8 +6,8 @@
 #include <sys/socket.h> // send(),recv()
 #include <netdb.h>      // gethostbyname()
 
-#define HAND_REQ "ENC_HELLO"
-#define HAND_REP "ENC_ACK"
+#define HAND_REQ "DEC_HELLO"
+#define HAND_REP "DEC_ACK"
 #define TCP_LIMIT 1000
 
 /**
