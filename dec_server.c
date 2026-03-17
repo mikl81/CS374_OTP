@@ -93,8 +93,6 @@ int main(int argc, char *argv[])
 {
     int connectionSocket, charsRead;
     char buffer[TCP_LIMIT + 1];
-    char inputData[256];
-    char keyData[256];
     char *encryptedChars;
     struct sockaddr_in serverAddress, clientAddress;
     socklen_t sizeOfClientInfo = sizeof(clientAddress);
@@ -170,19 +168,32 @@ int main(int argc, char *argv[])
             // Send init ACK
             send(connectionSocket, HAND_REP, strlen(HAND_REP), 0);
 
-            // Receive plaintext
+             // Receive plaintext
             int plaintextLen;
             recv(connectionSocket, &plaintextLen, sizeof(int), 0);
+            char *inputData = malloc(plaintextLen + 1);
             memset(inputData, '\0', sizeof(inputData));
-            recv(connectionSocket, inputData, plaintextLen, 0);
+            int received = 0;
+            while (received < plaintextLen)
+            {
+                int n = recv(connectionSocket, inputData, plaintextLen, 0);
+                received += n;
+            }
 
             // Receive key
             int keyLen;
             recv(connectionSocket, &keyLen, sizeof(int), 0);
+            char *keyData = malloc(keyLen + 1);
             memset(keyData, '\0', sizeof(keyData));
-            recv(connectionSocket, keyData, keyLen, 0);
 
-            //Encode data
+            received = 0;
+            while (received < keyLen)
+            {
+                int n = recv(connectionSocket, keyData, keyLen, 0);
+                received += n;
+            }
+
+            // Encode data
             char *result = decoder(inputData, keyData);
 
             // Send result back to client
@@ -191,6 +202,9 @@ int main(int argc, char *argv[])
             {
                 error("ERROR writing to socket");
             }
+
+            free(inputData);
+            free(keyData);
             free(result);
 
             close(connectionSocket);
